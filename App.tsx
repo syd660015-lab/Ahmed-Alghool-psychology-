@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { AppView } from './types';
-import { Layout } from './components/layout';
+import Layout from "./components"; // only if index.tsx exports it
 import { ChatView } from './components/ChatView';
 import { LecturesView } from './components/LecturesView';
 import { MeasurementView } from './components/MeasurementView';
@@ -39,3 +39,6 @@ const App: React.FC = () => {
 };
 
 export default App;
+export default function Layout() {
+  return (...)
+}

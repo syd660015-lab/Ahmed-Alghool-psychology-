@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { AppView } from './types';
-import { Layout } from './components/Layout';
+import { Layout } from './components/layout';
 import { ChatView } from './components/ChatView';
 import { LecturesView } from './components/LecturesView';
 import { MeasurementView } from './components/MeasurementView';

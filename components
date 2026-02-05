@@ -1,2 +1,77 @@
 mkdir components
 touch components/Layout.tsx
+import React from 'react';
+import { AppView } from '../types'; // استيراد AppView من types.ts (تأكد من وجوده)
+
+interface LayoutProps {
+activeView: AppView;
+setActiveView: (view: AppView) => void;
+children: React.ReactNode;
+}
+
+const Layout: React.FC<LayoutProps> = ({ activeView, setActiveView, children }) => {
+return (
+<div className="flex flex-row-reverse min-h-screen bg-slate-50" dir="rtl"> {/* دعم RTL */}
+{/* الشريط الجانبي (Sidebar) للتنقل */}
+<nav className="w-64 bg-white shadow-lg p-4">
+<h2 className="text-xl font-bold mb-4 academic-font">المساعد الأكاديمي</h2>
+<ul>
+<li>
+<button
+className={`w-full text-right py-2 px-4 rounded ${activeView === AppView.CHAT ? 'bg-blue-500 text-white' : 'hover:bg-blue-100'}`}
+onClick={() => setActiveView(AppView.CHAT)}
+>
+الدردشة
+</button>
+</li>
+<li>
+<button
+className={`w-full text-right py-2 px-4 rounded ${activeView === AppView.LECTURES ? 'bg-blue-500 text-white' : 'hover:bg-blue-100'}`}
+onClick={() => setActiveView(AppView.LECTURES)}
+>
+الم حاضرات
+</button>
+</li>
+<li>
+<button
+className={`w-full text-right py-2 px-4 rounded ${activeView === AppView.MEASUREMENT ? 'bg-blue-500 text-white' : 'hover:bg-blue-100'}`}
+onClick={() => setActiveView(AppView.MEASUREMENT)}
+>
+القياس
+</button>
+</li>
+<li>
+<button
+className={`w-full text-right py-2 px-4 rounded ${activeView === AppView.QUIZ ? 'bg-blue-500 text-white' : 'hover:bg-blue-100'}`}
+onClick={() => setActiveView(AppView.QUIZ)}
+>
+الاختبار
+</button>
+</li>
+<li>
+<button
+className={`w-full text-right py-2 px-4 rounded ${activeView === AppView.GLOSSARY ? 'bg-blue-500 text-white' : 'hover:bg-blue-100'}`}
+onClick={() => setActiveView(AppView.GLOSSARY)}
+>
+المصطلحات
+</button>
+</li>
+<li>
+<button
+className={`w-full text-right py-2 px-4 rounded ${activeView === AppView.GAMES ? 'bg-blue-500 text-white' : 'hover:bg-blue-100'}`}
+onClick={() => setActiveView(AppView.GAMES)}
+>
+الألعاب
+</button>
+</li>
+</ul>
+</nav>
+{/* المحتوى الرئيسي */}
+<main className="flex-1 p-6">
+{children}
+</main>
+</div>
+);
+};
+
+export default Layout;

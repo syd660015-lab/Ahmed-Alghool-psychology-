@@ -1,3 +1,14 @@
+// ملف: package.json
+{
+  "dependencies": {
+    "lucide-react": "^0.511.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "axios": "^1.9.0",
+    "framer-motion": "^11.15.0",
+    "react-router-dom": "^7.1.1"
+  }
+}
 {
   "name": "academic-expert-assistant---dr.-ahmed-hamdi-ashour-al-ghoul",
   "private": true,

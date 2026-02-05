@@ -1,1 +1,2 @@
 mkdir components
+touch components/Layout.tsx

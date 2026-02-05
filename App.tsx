@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppView } from './types';  // تأكد من وجود ملف types.ts أو types/index.ts يحتوي على enum AppView
-import { Layout } from './components/layout';  // تأكد من أن الملف هو layout.tsx (حرف صغير)
+import Layout from './components/Layout';
 import { ChatView } from './components/ChatView';  // تأكد من وجود ChatView.tsx
 import { LecturesView } from './components/LecturesView';  // تأكد من وجود LecturesView.tsx
 import { MeasurementView } from './components/MeasurementView';  // تأكد من وجود MeasurementView.tsx

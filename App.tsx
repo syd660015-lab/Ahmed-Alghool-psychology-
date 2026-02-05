@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { AppView } from './types';
 import { Layout } from './components/layout';
@@ -39,6 +38,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-export default function Layout() {
-  return (...)
-}

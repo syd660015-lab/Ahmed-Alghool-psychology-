@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { SYLLABUS } from '../constants';
-import { Search, BookMarked, Filter, Plus, X, Trash2, Info } from 'lucide-react';
+import { Search, BookMarked, Filter, Plus, X, Trash2, Info, BookOpen, ExternalLink } from 'lucide-react';
 
 interface CustomTerm {
   id: string;
@@ -15,7 +15,6 @@ interface CustomTerm {
 
 export const GlossaryView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  // Fix: Added 'custom' to the allowed types for selectedLecture state to match filter requirements
   const [selectedLecture, setSelectedLecture] = useState<number | 'all' | 'custom'>('all');
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [customTerms, setCustomTerms] = useState<CustomTerm[]>([]);
@@ -64,7 +63,9 @@ export const GlossaryView: React.FC = () => {
   };
 
   const handleDeleteCustomTerm = (id: string) => {
-    setCustomTerms(customTerms.filter(t => t.id !== id));
+    if (window.confirm('هل تريد حذف هذا المصطلح من قاموسك الشخصي؟')) {
+      setCustomTerms(customTerms.filter(t => t.id !== id));
+    }
   };
 
   const syllabusTerms = SYLLABUS.flatMap(l => 
@@ -81,7 +82,6 @@ export const GlossaryView: React.FC = () => {
 
   const filteredTerms = allTerms.filter(t => {
     const matchesSearch = t.term.includes(searchTerm) || t.termEn.toLowerCase().includes(searchTerm.toLowerCase());
-    // Fix: Updated state type allows for safe comparison with literal 'custom'
     const matchesLecture = selectedLecture === 'all' || 
                            (selectedLecture === 'custom' && t.isCustom) ||
                            t.lectureId === selectedLecture;
@@ -115,9 +115,9 @@ export const GlossaryView: React.FC = () => {
               <Filter size={16} className="text-slate-400" />
               <select
                 value={selectedLecture}
-                // Fix: Updated type definition for setSelectedLecture to accept 'custom' literal
                 onChange={(e) => setSelectedLecture(e.target.value === 'all' ? 'all' : (e.target.value === 'custom' ? 'custom' : Number(e.target.value)))}
-                className="bg-transparent focus:outline-none text-xs font-bold text-slate-600"
+                className="bg-transparent focus:outline-none text-xs font-bold text-slate-600 appearance-none pr-6 cursor-pointer"
+                style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%2364748b\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'left center', backgroundSize: '12px' }}
               >
                 <option value="all">كل المحاضرات</option>
                 <option value="custom">المصطلحات المضافة</option>
@@ -128,8 +128,8 @@ export const GlossaryView: React.FC = () => {
             </div>
             <button
               onClick={() => setIsAddFormOpen(!isAddFormOpen)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all text-sm ${
-                isAddFormOpen ? 'bg-slate-200 text-slate-700' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-100'
+              className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all text-sm shadow-lg ${
+                isAddFormOpen ? 'bg-slate-200 text-slate-700' : 'bg-indigo-600 text-white shadow-indigo-100 hover:bg-indigo-700'
               }`}
             >
               {isAddFormOpen ? <X size={18} /> : <Plus size={18} />}
@@ -149,7 +149,7 @@ export const GlossaryView: React.FC = () => {
                   value={newTerm}
                   onChange={(e) => setNewTerm(e.target.value)}
                   placeholder="مثال: الشعور بالنقص"
-                  className="w-full px-4 py-2.5 bg-white border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  className="w-full px-4 py-2.5 bg-white border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm shadow-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -159,7 +159,7 @@ export const GlossaryView: React.FC = () => {
                   value={newTermEn}
                   onChange={(e) => setNewTermEn(e.target.value)}
                   placeholder="e.g. Inferiority Feeling"
-                  className="w-full px-4 py-2.5 bg-white border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-sans"
+                  className="w-full px-4 py-2.5 bg-white border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-sans shadow-sm"
                 />
               </div>
             </div>
@@ -171,12 +171,12 @@ export const GlossaryView: React.FC = () => {
                 value={newDefinition}
                 onChange={(e) => setNewDefinition(e.target.value)}
                 placeholder="اكتب هنا شرحاً موجزاً ودقيقاً للمصطلح..."
-                className="w-full px-4 py-2.5 bg-white border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
+                className="w-full px-4 py-2.5 bg-white border border-indigo-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none shadow-sm"
               />
             </div>
             <button
               type="submit"
-              className="w-full bg-indigo-900 text-white py-3 rounded-xl font-bold hover:bg-indigo-800 transition-colors shadow-md"
+              className="w-full bg-indigo-900 text-white py-3 rounded-xl font-bold hover:bg-indigo-800 transition-all shadow-md active:scale-[0.99]"
             >
               حفظ المصطلح في القاموس الشخصي
             </button>
@@ -184,86 +184,118 @@ export const GlossaryView: React.FC = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {filteredTerms.length > 0 ? (
           filteredTerms.map((item) => (
             <div 
               key={item.id} 
-              className={`bg-white p-6 rounded-3xl border shadow-sm hover:shadow-xl transition-all group relative overflow-hidden ${
-                item.isCustom ? 'border-indigo-400' : 'border-slate-100 border-r-4 border-r-indigo-200 hover:border-r-indigo-600'
+              className={`flex flex-col bg-white rounded-[2rem] border transition-all duration-300 group overflow-hidden ${
+                item.isCustom 
+                  ? 'border-indigo-200 bg-indigo-50/5 hover:border-indigo-400 hover:shadow-2xl shadow-indigo-100' 
+                  : 'border-slate-100 hover:border-indigo-300 hover:shadow-2xl shadow-slate-200'
               }`}
             >
-              {item.isCustom && (
-                <div className="absolute top-0 left-0 bg-indigo-600 text-white text-[8px] font-black uppercase px-3 py-1 rounded-br-xl tracking-tighter shadow-sm z-10">
-                  Custom Entry
-                </div>
-              )}
-              
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex flex-col">
-                  <h3 className="text-xl font-bold text-slate-800 group-hover:text-indigo-900 transition-colors academic-font">
+              {/* Header: Term and EN translation */}
+              <div className="p-6 pb-0 flex justify-between items-start">
+                <div className="space-y-1">
+                  <h3 className="text-2xl font-bold text-slate-800 group-hover:text-indigo-900 transition-colors academic-font leading-tight">
                     {item.term}
                   </h3>
                   {item.termEn && (
-                    <span className="text-xs font-bold text-indigo-500 font-sans tracking-wide uppercase mt-1">
+                    <div className="inline-flex items-center px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full border border-indigo-100 text-[10px] font-black font-sans tracking-wider uppercase shadow-sm">
                       {item.termEn}
-                    </span>
+                    </div>
                   )}
                 </div>
-                <div className="flex gap-2">
+                
+                <div className="flex-shrink-0">
                   {item.isCustom ? (
                     <button 
                       onClick={() => handleDeleteCustomTerm(item.id)}
-                      className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                      className="p-2.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                       title="حذف المصطلح"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={18} />
                     </button>
                   ) : (
-                    <BookMarked size={20} className="text-slate-200 group-hover:text-indigo-400 transition-colors" />
+                    <div className="p-2.5 bg-slate-50 rounded-xl text-slate-300 group-hover:text-indigo-500 group-hover:bg-indigo-50 transition-all">
+                      <BookMarked size={20} />
+                    </div>
                   )}
                 </div>
               </div>
 
-              <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                {item.definition}
-              </p>
+              {/* Body: Definition */}
+              <div className="p-6 flex-1">
+                <div className="relative">
+                  <div className="absolute -right-4 top-0 bottom-0 w-1 bg-slate-100 rounded-full group-hover:bg-indigo-400 transition-colors"></div>
+                  <p className="text-slate-600 text-sm leading-relaxed academic-font text-lg pr-2 italic">
+                    {item.definition}
+                  </p>
+                </div>
+              </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-slate-50 mt-auto">
-                <div className="flex items-center gap-1.5">
+              {/* Footer: Metadata */}
+              <div className={`px-6 py-4 flex items-center justify-between border-t transition-colors ${
+                item.isCustom ? 'bg-indigo-50/50 border-indigo-100' : 'bg-slate-50 border-slate-100 group-hover:bg-indigo-50 group-hover:border-indigo-100'
+              }`}>
+                <div className="flex items-center gap-2">
                   {item.isCustom ? (
-                    <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-100 flex items-center gap-1">
-                      <Info size={10} /> ملاحظة شخصية
-                    </span>
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-[9px] font-black uppercase tracking-tight">
+                      <Info size={12} />
+                      <span>مدخل شخصي</span>
+                    </div>
                   ) : (
-                    <span className="text-[10px] font-black text-slate-400 bg-slate-50 px-2 py-1 rounded uppercase tracking-tighter">
-                      المحاضرة {item.lectureId}
-                    </span>
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-200 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-tight group-hover:bg-indigo-200 group-hover:text-indigo-800 transition-colors">
+                      <BookOpen size={12} />
+                      <span>محاضرة {item.lectureId}</span>
+                    </div>
                   )}
                 </div>
-                <span className="text-[10px] text-slate-400 italic max-w-[150px] truncate text-left">
-                  {item.lectureTitle}
-                </span>
+                
+                <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold group-hover:text-indigo-600 transition-colors">
+                   <span className="truncate max-w-[120px]">{item.lectureTitle}</span>
+                   {!item.isCustom && <ExternalLink size={10} className="opacity-40" />}
+                </div>
               </div>
+
+              {/* Hover effect light flare */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-transparent to-indigo-500/5 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-700"></div>
             </div>
           ))
         ) : (
-          <div className="col-span-full py-24 text-center bg-white rounded-3xl border border-dashed border-slate-200">
-            <div className="inline-block p-6 bg-slate-50 rounded-full mb-4">
-              <Search size={40} className="text-slate-300" />
+          <div className="col-span-full py-24 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-200 shadow-inner">
+            <div className="inline-flex p-8 bg-slate-50 rounded-full mb-6 border border-slate-100 shadow-sm">
+              <Search size={48} className="text-slate-300" />
             </div>
-            <h4 className="text-xl font-bold text-slate-800 mb-2">لا يوجد نتائج</h4>
-            <p className="text-slate-500 text-sm">عذراً، لم نجد أي مصطلح يطابق بحثك الحالي.</p>
+            <h4 className="text-2xl font-bold text-slate-800 mb-2 academic-font">لم نجد أي تطابق</h4>
+            <p className="text-slate-500 text-sm max-w-sm mx-auto leading-relaxed">
+              عذراً، لم يتم العثور على مصطلحات تطابق بحثك الحالي "{searchTerm}". حاول استخدام كلمات مفتاحية أخرى.
+            </p>
             {searchTerm && (
               <button 
                 onClick={() => setSearchTerm('')}
-                className="mt-6 text-indigo-600 font-bold text-sm hover:underline"
+                className="mt-8 px-6 py-2.5 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-sm hover:bg-indigo-100 transition-all border border-indigo-100"
               >
-                مسح البحث
+                تفريغ خانة البحث
               </button>
             )}
           </div>
         )}
+      </div>
+      
+      {/* Decorative summary info */}
+      <div className="flex justify-center pt-6">
+        <div className="inline-flex items-center gap-6 px-8 py-3 bg-white border border-slate-100 rounded-full shadow-sm text-xs font-bold text-slate-500">
+           <div className="flex items-center gap-2">
+             <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+             <span>إجمالي المصطلحات: {allTerms.length}</span>
+           </div>
+           <div className="flex items-center gap-2 border-r border-slate-200 pr-6">
+             <span className="w-2 h-2 rounded-full bg-green-500"></span>
+             <span>مدخلاتك الخاصة: {customTerms.length}</span>
+           </div>
+        </div>
       </div>
     </div>
   );

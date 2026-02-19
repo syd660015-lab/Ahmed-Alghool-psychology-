@@ -1,10 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { SYLLABUS } from '../constants';
+import { LectureMiniQuiz } from './LectureMiniQuiz';
+import { LectureNotes } from './LectureNotes';
 import { 
   Book, CheckCircle2, Brain, Network, Zap, Users, 
   EyeOff, Puzzle, Heart, Ruler, Palette, Activity,
-  Info, Target, Shield
+  Info, Target, Shield, BookOpen, ClipboardCheck, X, PencilLine
 } from 'lucide-react';
 
 const getLectureIcon = (id: number) => {
@@ -25,6 +27,11 @@ const getLectureIcon = (id: number) => {
 };
 
 export const LecturesView: React.FC = () => {
+  const [activeQuizId, setActiveQuizId] = useState<number | null>(null);
+  const [openNotesId, setOpenNotesId] = useState<number | null>(null);
+
+  const activeLecture = SYLLABUS.find(l => l.id === activeQuizId);
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="text-center mb-10">
@@ -38,18 +45,19 @@ export const LecturesView: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-10">
         {SYLLABUS.map((lecture) => {
           const IconComponent = getLectureIcon(lecture.id);
+          const isNotesOpen = openNotesId === lecture.id;
           
           return (
             <div 
               key={lecture.id} 
-              className="relative bg-white rounded-3xl shadow-lg border-t-8 border-indigo-600 transition-all duration-500 ease-out group overflow-hidden hover:shadow-2xl hover:-translate-y-3 hover:scale-[1.015]"
+              className="relative bg-white rounded-3xl shadow-lg border-t-8 border-indigo-600 transition-all duration-500 ease-out group overflow-hidden hover:shadow-2xl hover:-translate-y-1 transform-gpu"
             >
               {/* Parallax Background Icon */}
               <div className="absolute -top-10 -left-10 opacity-[0.02] group-hover:opacity-[0.08] group-hover:translate-x-12 group-hover:-translate-y-12 group-hover:rotate-[45deg] transition-all duration-1000 ease-in-out pointer-events-none transform-gpu">
                 <IconComponent size={240} />
               </div>
 
-              <div className="p-8 relative z-10">
+              <div className="p-8 relative z-10 flex flex-col h-full">
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex items-center gap-4">
                     <div className="bg-indigo-900 text-white p-4 rounded-2xl shadow-xl group-hover:scale-110 group-hover:rotate-6 group-hover:bg-indigo-700 transition-all duration-500 ease-out">
@@ -62,7 +70,7 @@ export const LecturesView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-6 flex-1">
                   <div className="relative">
                     <p className="text-slate-700 leading-relaxed font-medium text-lg">
                       {lecture.description}
@@ -111,6 +119,31 @@ export const LecturesView: React.FC = () => {
                     ))}
                   </div>
                 </div>
+
+                {/* Notes Section Toggle */}
+                {isNotesOpen && <LectureNotes lectureId={lecture.id} />}
+
+                {/* Quick Action Buttons */}
+                <div className="mt-8 pt-6 border-t border-slate-100 flex gap-3">
+                   <button 
+                     onClick={() => setOpenNotesId(isNotesOpen ? null : lecture.id)}
+                     className={`flex-1 py-4 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all active:scale-95 border-2 ${
+                       isNotesOpen 
+                        ? 'bg-indigo-50 border-indigo-200 text-indigo-900 shadow-inner' 
+                        : 'bg-white border-slate-200 text-slate-700 hover:border-indigo-300 hover:bg-slate-50 shadow-sm'
+                     }`}
+                   >
+                     <PencilLine size={20} />
+                     <span>{isNotesOpen ? 'إغلاق الملاحظات' : 'ملاحظات شخصية'}</span>
+                   </button>
+                   <button 
+                     onClick={() => setActiveQuizId(lecture.id)}
+                     className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-indigo-900 transition-all shadow-xl active:scale-95"
+                   >
+                     <ClipboardCheck size={20} />
+                     <span>اختبر فهمك</span>
+                   </button>
+                </div>
               </div>
 
               {/* Decorative base banner */}
@@ -121,6 +154,42 @@ export const LecturesView: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Mini Quiz Modal Overlay */}
+      {activeQuizId !== null && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+          <div 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" 
+            onClick={() => setActiveQuizId(null)}
+          ></div>
+          <div className="relative w-full max-w-xl animate-in slide-in-from-bottom-10 duration-500">
+            <div className="bg-white rounded-[2.5rem] overflow-hidden shadow-2xl">
+              <div className="bg-indigo-900 px-8 py-6 text-white flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                   <BookOpen size={24} className="text-indigo-300" />
+                   <div>
+                     <h3 className="text-xl font-bold academic-font">{activeLecture?.title}</h3>
+                     <p className="text-xs text-indigo-300">اختبار سريع للمحتوى</p>
+                   </div>
+                </div>
+                <button 
+                  onClick={() => setActiveQuizId(null)}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="p-2 bg-slate-50">
+                <LectureMiniQuiz 
+                  lectureId={activeQuizId} 
+                  lectureTitle={activeLecture?.title || ''} 
+                  onClose={() => setActiveQuizId(null)} 
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { SYLLABUS } from '../constants';
 import { 
   Trophy, RefreshCw, Star, Zap, ChevronRight, CheckCircle2, 
-  XCircle, Timer, Puzzle, HelpCircle, Layers 
+  XCircle, Timer, Puzzle, HelpCircle, Layers, Grid 
 } from 'lucide-react';
 
-type GameMode = 'matching' | 'truefalse' | 'sorting';
+type GameMode = 'matching' | 'truefalse' | 'sorting' | 'crossword';
 
 interface GameItem {
   id: string;
@@ -38,9 +38,37 @@ export const GamesView: React.FC = () => {
   // Sorting Game State (Freudian Specific)
   const [sortItems, setSortItems] = useState<{id: number, text: string, category: string}[]>([]);
   const [sortScore, setSortScore] = useState(0);
+  const [sortFeedback, setSortFeedback] = useState<'correct' | 'wrong' | null>(null);
+
+  // Crossword Game State
+  const [crosswordWords, setCrosswordWords] = useState<{
+    id: string, 
+    term: string, 
+    definition: string, 
+    guessed: boolean, 
+    userInput: string,
+    hintsUsed?: number,
+    isError?: boolean
+  }[]>([]);
 
   const [score, setScore] = useState(0);
   const [isWon, setIsWon] = useState(false);
+
+  // Save Crossword Progress
+  useEffect(() => {
+    if (activeMode === 'crossword' && selectedLecture && !isWon && crosswordWords.length > 0) {
+      localStorage.setItem(`crossword_progress_${selectedLecture}`, JSON.stringify({
+        words: crosswordWords,
+        score: score
+      }));
+    }
+  }, [crosswordWords, score, activeMode, selectedLecture, isWon]);
+
+  useEffect(() => {
+    if (activeMode === 'crossword' && isWon && selectedLecture) {
+      localStorage.removeItem(`crossword_progress_${selectedLecture}`);
+    }
+  }, [isWon, activeMode, selectedLecture]);
 
   const initMatching = (lectureId: number) => {
     const lecture = SYLLABUS.find(l => l.id === lectureId);
@@ -82,6 +110,37 @@ export const GamesView: React.FC = () => {
     setSortScore(0);
   };
 
+  const initCrossword = (lectureId: number) => {
+    const lecture = SYLLABUS.find(l => l.id === lectureId);
+    if (!lecture) return;
+
+    const savedProgress = localStorage.getItem(`crossword_progress_${lectureId}`);
+    if (savedProgress) {
+      try {
+        const parsed = JSON.parse(savedProgress);
+        if (parsed && parsed.words && parsed.words.length > 0) {
+          setCrosswordWords(parsed.words);
+          setScore(parsed.score || 0);
+          return;
+        }
+      } catch (e) {
+        console.error("Failed to parse saved progress", e);
+      }
+    }
+
+    const terms = [...lecture.glossary].sort(() => Math.random() - 0.5).slice(0, 5);
+    setCrosswordWords(terms.map(t => ({
+      id: t.term,
+      term: t.term,
+      definition: t.definition,
+      guessed: false,
+      userInput: '',
+      hintsUsed: 0,
+      isError: false
+    })));
+    setScore(0);
+  };
+
   const startGame = (mode: GameMode, lectureId: number) => {
     setActiveMode(mode);
     setSelectedLecture(lectureId);
@@ -91,6 +150,7 @@ export const GamesView: React.FC = () => {
     if (mode === 'matching') initMatching(lectureId);
     if (mode === 'truefalse') initTrueFalse(lectureId);
     if (mode === 'sorting') initSorting(lectureId);
+    if (mode === 'crossword') initCrossword(lectureId);
   };
 
   // Timer Effect for True/False
@@ -145,14 +205,93 @@ export const GamesView: React.FC = () => {
   };
 
   const handleSort = (item: any, category: string) => {
+    if (sortFeedback) return; // Prevent multiple clicks during animation
+
     if (item.category === category) {
+      setSortFeedback('correct');
       setScore(prev => prev + 10);
-      setSortItems(prev => prev.filter(i => i.id !== item.id));
-      if (sortItems.length === 1) setIsWon(true);
+      setTimeout(() => {
+        setSortItems(prev => prev.filter(i => i.id !== item.id));
+        setSortFeedback(null);
+        if (sortItems.length === 1) setIsWon(true);
+      }, 800);
     } else {
+      setSortFeedback('wrong');
       setScore(prev => Math.max(0, prev - 5));
-      // Animation or shake effect could be added here
+      setTimeout(() => {
+        setSortFeedback(null);
+      }, 800);
     }
+  };
+
+  const normalizeArabic = (text: string) => {
+    return text.replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/\s+/g, ' ').trim();
+  };
+
+  const checkCrosswordAnswer = (id: string) => {
+    setCrosswordWords(prev => {
+      let addedScore = 0;
+      const newWords = prev.map(w => {
+        if (w.id === id) {
+          const isCorrect = normalizeArabic(w.userInput) === normalizeArabic(w.term);
+          if (isCorrect && !w.guessed) {
+            addedScore = 20;
+            return { ...w, guessed: true, isError: false };
+          } else if (!isCorrect) {
+            addedScore = -5;
+            return { ...w, isError: true };
+          }
+        }
+        return w;
+      });
+
+      if (newWords.every(w => w.guessed)) {
+        setTimeout(() => setIsWon(true), 500);
+      }
+
+      setScore(s => Math.max(0, s + addedScore));
+      return newWords;
+    });
+  };
+
+  const handleCrosswordHint = (id: string) => {
+    setCrosswordWords(prev => {
+      let deduct = 0;
+      const newWords = prev.map(w => {
+        if (w.id === id && !w.guessed) {
+          const targetTerm = w.term;
+          let currentHints = w.hintsUsed || 0;
+          
+          if (currentHints < targetTerm.length) {
+            deduct = 2;
+            let nextLength = currentHints + 1;
+            // Skip spaces
+            while (nextLength <= targetTerm.length && targetTerm[nextLength - 1] === ' ') {
+              nextLength++;
+            }
+            
+            let newUserInput = w.userInput.split('');
+            while(newUserInput.length < targetTerm.length) newUserInput.push(' ');
+            
+            for(let i=0; i<nextLength; i++) {
+               newUserInput[i] = targetTerm[i];
+            }
+
+            return { 
+              ...w, 
+              hintsUsed: nextLength, 
+              userInput: newUserInput.join(''),
+              isError: false
+            };
+          }
+        }
+        return w;
+      });
+      if (deduct > 0) {
+        setScore(s => Math.max(0, s - deduct));
+      }
+      return newWords;
+    });
   };
 
   if (!selectedLecture || !activeMode) {
@@ -193,6 +332,15 @@ export const GamesView: React.FC = () => {
                   </div>
                   <ChevronRight size={14} className="group-hover:translate-x-[-4px] transition-transform" />
                 </button>
+                <button 
+                  onClick={() => startGame('crossword', lecture.id)}
+                  className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-colors text-sm font-bold group"
+                >
+                  <div className="flex items-center gap-2">
+                    <Grid size={16} /> الكلمات المتقاطعة
+                  </div>
+                  <ChevronRight size={14} className="group-hover:translate-x-[-4px] transition-transform" />
+                </button>
                 {lecture.id === 1 && (
                   <button 
                     onClick={() => startGame('sorting', lecture.id)}
@@ -224,6 +372,7 @@ export const GamesView: React.FC = () => {
               {activeMode === 'matching' && "تحدي التوصيل الذهني"}
               {activeMode === 'truefalse' && "ماراثون صح أم خطأ"}
               {activeMode === 'sorting' && "تحدي فرز المفاهيم"}
+              {activeMode === 'crossword' && "الكلمات المتقاطعة"}
             </h3>
             <p className="text-xs text-slate-400">المحاضرة: {SYLLABUS.find(l => l.id === selectedLecture)?.title}</p>
           </div>
@@ -247,6 +396,15 @@ export const GamesView: React.FC = () => {
           <Trophy size={64} className="text-yellow-500 mx-auto mb-6" />
           <h2 className="text-3xl font-bold text-slate-800 mb-2 academic-font">انتصار أكاديمي باهر!</h2>
           <p className="text-slate-500 mb-8 italic">"التعلم الممتع هو الطريق الأقصر لإتقان علم النفس الدينامي"</p>
+          
+          <div className="mb-8 p-6 bg-indigo-50 rounded-2xl inline-block border border-indigo-100">
+            <p className="text-slate-600 mb-2 font-bold">النتيجة النهائية</p>
+            <div className="text-5xl font-bold text-indigo-700 flex items-center justify-center gap-3">
+              <Star className="fill-yellow-500 text-yellow-500" size={40} />
+              {score}
+            </div>
+          </div>
+
           <div className="flex justify-center gap-4">
             <button onClick={() => { setSelectedLecture(null); setActiveMode(null); }} className="px-8 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200">العودة للمنصة</button>
             <button onClick={() => startGame(activeMode, selectedLecture)} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700">تحدي جديد</button>
@@ -312,9 +470,21 @@ export const GamesView: React.FC = () => {
             <div className="space-y-10">
               <div className="flex flex-wrap justify-center gap-4">
                 {sortItems.length > 0 ? (
-                  <div className="p-8 bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-3xl w-full text-center animate-pulse">
-                    <p className="text-lg font-bold text-indigo-900 mb-2">المفهوم الحالي:</p>
-                    <h4 className="text-2xl font-bold text-slate-800">{sortItems[0].text}</h4>
+                  <div className={`p-8 border-2 rounded-3xl w-full text-center transition-all duration-300 ${
+                    sortFeedback === 'correct' ? 'bg-green-50 border-green-400 text-green-800 scale-105' :
+                    sortFeedback === 'wrong' ? 'bg-red-50 border-red-400 text-red-800' :
+                    'bg-indigo-50 border-dashed border-indigo-200 animate-pulse'
+                  }`}>
+                    <p className={`text-lg font-bold mb-2 ${
+                      sortFeedback === 'correct' ? 'text-green-700' :
+                      sortFeedback === 'wrong' ? 'text-red-700' :
+                      'text-indigo-900'
+                    }`}>
+                      {sortFeedback === 'correct' ? 'إجابة صحيحة!' :
+                       sortFeedback === 'wrong' ? 'حاول مرة أخرى! (-5 نقاط)' :
+                       'المفهوم الحالي:'}
+                    </p>
+                    <h4 className="text-2xl font-bold">{sortItems[0].text}</h4>
                   </div>
                 ) : null}
               </div>
@@ -323,7 +493,8 @@ export const GamesView: React.FC = () => {
                   <button 
                     key={cat}
                     onClick={() => sortItems.length > 0 && handleSort(sortItems[0], cat)}
-                    className="p-8 bg-white border-2 border-slate-100 rounded-3xl hover:border-indigo-500 hover:bg-indigo-50 transition-all group flex flex-col items-center gap-3"
+                    disabled={sortFeedback !== null}
+                    className="p-8 bg-white border-2 border-slate-100 rounded-3xl hover:border-indigo-500 hover:bg-indigo-50 transition-all group flex flex-col items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="p-3 bg-slate-50 group-hover:bg-indigo-100 rounded-2xl text-slate-400 group-hover:text-indigo-600 transition-colors">
                       <Layers size={32} />
@@ -332,6 +503,124 @@ export const GamesView: React.FC = () => {
                     <span className="text-[10px] text-slate-400 uppercase font-bold">انقر للتصنيف</span>
                   </button>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Crossword Game */}
+          {activeMode === 'crossword' && (
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                  <p className="text-slate-500 text-center md:text-right flex-1">
+                    اقرأ التعريف واكتب المصطلح الصحيح. استخدم التلميحات عند الحاجة!
+                  </p>
+                  <button 
+                    onClick={() => {
+                      if(window.confirm('هل أنت متأكد من إعادة تعيين اللعبة؟')) {
+                        localStorage.removeItem(`crossword_progress_${selectedLecture}`);
+                        initCrossword(selectedLecture!);
+                      }
+                    }}
+                    className="flex items-center gap-2 text-sm text-red-500 hover:text-red-700 bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    <RefreshCw size={14} /> إعادة البدء
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {crosswordWords.map((word, index) => (
+                    <div key={word.id} className={`p-6 rounded-3xl border-2 transition-all ${word.guessed ? 'bg-green-50/50 border-green-200' : word.isError ? 'bg-red-50/50 border-red-200' : 'bg-white border-slate-200 shadow-sm hover:shadow-md'}`}>
+                      <div className="flex flex-col gap-6">
+                        <div className="flex items-start gap-3">
+                          <span className="shrink-0 w-8 h-8 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-bold text-sm">{index + 1}</span>
+                          <p className="text-slate-700 font-medium text-lg leading-relaxed pt-1">{word.definition}</p>
+                        </div>
+                        
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                          <div className="flex gap-1.5 flex-wrap justify-center" dir="rtl">
+                            {word.term.split('').map((char, i) => {
+                              if (char === ' ') {
+                                return <div key={i} className="w-4 h-12"></div>;
+                              }
+                              return (
+                                <input 
+                                  key={i}
+                                  id={`input-${word.id}-${i}`}
+                                  type="text"
+                                  maxLength={1}
+                                  value={word.guessed ? char : (word.userInput[i] && word.userInput[i] !== ' ' ? word.userInput[i] : '')}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setCrosswordWords(prev => prev.map(w => {
+                                      if (w.id === word.id) {
+                                        let arr = w.userInput.split('');
+                                        while(arr.length < w.term.length) arr.push(' ');
+                                        arr[i] = val || ' ';
+                                        return { ...w, userInput: arr.join(''), isError: false };
+                                      }
+                                      return w;
+                                    }));
+                                    if (val && i < word.term.length - 1) {
+                                       let nextI = i + 1;
+                                       while(nextI < word.term.length && word.term[nextI] === ' ') nextI++;
+                                       const nextEl = document.getElementById(`input-${word.id}-${nextI}`);
+                                       if (nextEl) nextEl.focus();
+                                    }
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Backspace' && (!word.userInput[i] || word.userInput[i] === ' ')) {
+                                       let prevI = i - 1;
+                                       while(prevI >= 0 && word.term[prevI] === ' ') prevI--;
+                                       const prevEl = document.getElementById(`input-${word.id}-${prevI}`);
+                                       if (prevEl) prevEl.focus();
+                                    } else if (e.key === 'Enter' && !word.guessed) {
+                                      checkCrosswordAnswer(word.id);
+                                    }
+                                  }}
+                                  disabled={word.guessed || (word.hintsUsed !== undefined && i < word.hintsUsed)}
+                                  className={`w-10 h-12 sm:w-12 sm:h-14 text-center rounded-xl border-2 outline-none transition-all font-bold text-xl
+                                    ${word.guessed ? 'bg-green-100 border-green-400 text-green-800' : 
+                                      word.isError ? 'bg-red-50 border-red-400 text-red-800' : 
+                                      (word.hintsUsed !== undefined && i < word.hintsUsed) ? 'bg-amber-100 border-amber-400 text-amber-900' :
+                                      'bg-white border-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 text-slate-800 shadow-sm'}`}
+                                />
+                              );
+                            })}
+                          </div>
+                          
+                          {!word.guessed && (
+                            <div className="flex gap-2 shrink-0">
+                              <button 
+                                onClick={() => checkCrosswordAnswer(word.id)}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-xl flex items-center justify-center gap-2 transition-colors font-bold text-sm shadow-sm"
+                                title="تحقق من الإجابة"
+                              >
+                                <CheckCircle2 size={18} /> تحقق
+                              </button>
+                              <button 
+                                onClick={() => handleCrosswordHint(word.id)}
+                                className="bg-amber-100 hover:bg-amber-200 text-amber-700 px-4 py-3 rounded-xl flex items-center justify-center gap-2 transition-colors font-bold text-sm shadow-sm"
+                                title="تلميح (-2 نقطة)"
+                              >
+                                <Zap size={18} /> تلميح
+                              </button>
+                            </div>
+                          )}
+                          {word.guessed && (
+                            <div className="flex items-center justify-center px-6 py-3 bg-green-100 text-green-700 rounded-xl font-bold gap-2">
+                              <CheckCircle2 size={20} /> إجابة صحيحة
+                            </div>
+                          )}
+                        </div>
+                        {word.isError && !word.guessed && (
+                          <p className="text-red-500 text-sm font-bold flex items-center gap-2">
+                            <XCircle size={16} /> إجابة خاطئة، تم خصم 5 نقاط. حاول مرة أخرى!
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Cairo', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Amiri', ui-serif, Georgia, serif;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900;
+    font-family: var(--font-sans);
+  }
+}
+
+@layer components {
+  .academic-font {
+    font-family: var(--font-serif);
+  }
+}

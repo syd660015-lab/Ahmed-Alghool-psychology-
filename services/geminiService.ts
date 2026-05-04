@@ -4,8 +4,14 @@ import { Message, AppView } from "../types";
 import { SYSTEM_INSTRUCTION } from "../constants";
 
 export const generateGeminiResponse = async (history: Message[]) => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.warn("GEMINI_API_KEY is missing. AI features will not work.");
+    return "عذراً، مفتاح API غير متوفر. يرجى التأكد من إعداد بيئة التطبيق بشكل صحيح.";
+  }
+
   // Always use a named parameter for apiKey and access it directly from process.env.GEMINI_API_KEY.
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
   
   // Format history for Gemini API: use 'model' role instead of 'assistant' for multi-turn conversations.
   const contents = history.map(msg => ({
@@ -15,7 +21,7 @@ export const generateGeminiResponse = async (history: Message[]) => {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: contents,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,

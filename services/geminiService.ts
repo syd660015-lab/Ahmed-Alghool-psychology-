@@ -4,8 +4,8 @@ import { Message, AppView } from "../types";
 import { SYSTEM_INSTRUCTION } from "../constants";
 
 export const generateGeminiResponse = async (history: Message[]) => {
-  // Always use a named parameter for apiKey and access it directly from process.env.API_KEY.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Always use a named parameter for apiKey and access it directly from process.env.GEMINI_API_KEY.
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   
   // Format history for Gemini API: use 'model' role instead of 'assistant' for multi-turn conversations.
   const contents = history.map(msg => ({
@@ -15,7 +15,7 @@ export const generateGeminiResponse = async (history: Message[]) => {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-3-flash-preview',
       contents: contents,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,

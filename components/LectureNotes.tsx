@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Save, FileText, Trash2, CheckCircle } from 'lucide-react';
+import { Save, FileText, Trash2, CheckCircle, Download } from 'lucide-react';
 
 interface LectureNotesProps {
   lectureId: number;
@@ -38,6 +38,27 @@ export const LectureNotes: React.FC<LectureNotesProps> = ({ lectureId }) => {
     }
   };
 
+  const handleExport = () => {
+    if (!note.trim()) {
+      alert('لا توجد ملاحظات لتصديرها!');
+      return;
+    }
+
+    const title = `ملاحظات المحاضرة رقم ${lectureId}`;
+    const divider = '='.repeat(30);
+    const content = `${title}\n${divider}\n\n${note}\n\n\nتم التصدير من منصة القياس النفسي الدينامي`;
+    
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Lecture_Notes_${lectureId}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 mt-4 animate-in slide-in-from-top-2 duration-300">
       <div className="flex items-center justify-between mb-4">
@@ -51,6 +72,13 @@ export const LectureNotes: React.FC<LectureNotesProps> = ({ lectureId }) => {
                <CheckCircle size={12} /> تم الحفظ
              </span>
            )}
+           <button 
+             onClick={handleExport}
+             className="p-1.5 text-indigo-600 hover:bg-white rounded-lg transition-colors"
+             title="تصدير كملف نصي"
+           >
+             <Download size={16} />
+           </button>
            <button 
              onClick={handleClear}
              className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
@@ -68,7 +96,7 @@ export const LectureNotes: React.FC<LectureNotesProps> = ({ lectureId }) => {
         className="w-full min-h-[120px] bg-white border border-slate-200 rounded-xl p-4 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all resize-none shadow-inner"
       />
 
-      <div className="mt-4 flex justify-end">
+      <div className="mt-4 flex justify-end gap-2">
         <button
           onClick={handleSave}
           disabled={isSaving}

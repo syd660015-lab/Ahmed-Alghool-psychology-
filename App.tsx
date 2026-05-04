@@ -8,6 +8,7 @@ import { MeasurementView } from './components/MeasurementView';
 import { QuizView } from './components/QuizView';
 import { GlossaryView } from './components/GlossaryView';
 import { GamesView } from './components/GamesView';
+import { AdaptiveTestView } from './components/AdaptiveTestView';
 
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState<AppView>(AppView.CHAT);
@@ -26,6 +27,8 @@ const App: React.FC = () => {
         return <GlossaryView />;
       case AppView.GAMES:
         return <GamesView />;
+      case AppView.ADAPTIVE_TEST:
+        return <AdaptiveTestView />;
       default:
         return <ChatView />;
     }

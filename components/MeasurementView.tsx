@@ -1,6 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { HelpCircle, Info, BarChart3, Binary } from 'lucide-react';
 
 const generateNormalData = () => {
   const data = [];
@@ -15,8 +17,32 @@ const generateNormalData = () => {
   return data;
 };
 
+const MEASUREMENT_DETAILS = {
+  nominal: {
+    example: "تصنيف الطلاب حسب الجنس (ذكر/أنثى) أو أرقام القمصان الرياضية.",
+    stats: "العمليات الإحصائية: المنوال، التكرارات، واختبار 'كا تربيع'. لا يمكن إجراء عمليات جمع أو طرح.",
+    color: "bg-blue-600"
+  },
+  ordinal: {
+    example: "ترتيب المتفوقين (الأول، الثاني...) أو الرتب العسكرية.",
+    stats: "العمليات الإحصائية: الوسيط، المئينات، ومعامل ارتباط سبيرمان للرتب. المسافات بين الرتب غير متساوية بالضرورة.",
+    color: "bg-emerald-600"
+  },
+  interval: {
+    example: "درجات اختبارات الذكاء (IQ) أو درجة الحرارة بالفهرنهايت.",
+    stats: "العمليات الإحصائية: المتوسط الحسابي، الانحراف المعياري، ومعامل ارتباط بيرسون. الصفر هنا افتراضي ولا يعني انعدام السمة.",
+    color: "bg-amber-600"
+  },
+  ratio: {
+    example: "زمن الرجع (بالثانية)، الطول (بالسم)، أو الدخل السنوي.",
+    stats: "أرقى المستويات: يسمح بكافة العمليات الحسابية والتحليلات البارامترية المتقدمة. الصفر حقيقي ويعني انعدام وجود الظاهرة.",
+    color: "bg-rose-600"
+  }
+};
+
 export const MeasurementView: React.FC = () => {
   const data = generateNormalData();
+  const [hoveredRow, setHoveredRow] = useState<keyof typeof MEASUREMENT_DETAILS | null>(null);
 
   return (
     <div className="space-y-10 animate-in slide-in-from-bottom-5 duration-500">
@@ -67,38 +93,95 @@ export const MeasurementView: React.FC = () => {
         </div>
       </section>
 
-      <section className="bg-slate-900 text-white p-8 rounded-3xl shadow-xl overflow-hidden">
-        <h2 className="text-2xl font-bold academic-font mb-6 border-r-4 border-indigo-400 pr-4">مستويات القياس النفسي (Levels of Measurement)</h2>
+      <section className="bg-slate-900 text-white p-8 rounded-3xl shadow-xl overflow-hidden relative">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <h2 className="text-2xl font-bold academic-font border-r-4 border-indigo-400 pr-4">
+            مستويات القياس النفسي (Levels of Measurement)
+          </h2>
+          <div className="flex items-center gap-2 text-xs text-indigo-300 bg-indigo-900/40 px-3 py-1.5 rounded-full border border-indigo-500/30">
+            <Info size={14} /> مرر الفأرة فوق الصف لمعرفة الخصائص الإحصائية
+          </div>
+        </div>
+
         <div className="overflow-x-auto rounded-xl border border-slate-700">
           <table className="w-full text-right border-collapse">
             <thead>
               <tr className="bg-slate-800/50">
-                <th className="py-4 px-6 font-bold text-indigo-300 border-b border-slate-700">المستوى (بالعربية)</th>
+                <th className="py-4 px-6 font-bold text-indigo-300 border-b border-slate-700">المستوى</th>
                 <th className="py-4 px-6 font-bold text-indigo-300 border-b border-slate-700">English Term</th>
                 <th className="py-4 px-6 font-bold text-indigo-300 border-b border-slate-700">الخصائص المميزة</th>
                 <th className="py-4 px-6 font-bold text-indigo-300 border-b border-slate-700">أمثلة تطبيقية</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
-              <tr className="hover:bg-slate-800/30 transition-colors">
+            <tbody className="divide-y divide-slate-800 relative">
+              <AnimatePresence>
+                {hoveredRow && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="absolute z-20 left-10 right-10 top-1/4 pointer-events-none"
+                  >
+                    <div className={`${MEASUREMENT_DETAILS[hoveredRow].color} p-6 rounded-2xl shadow-2xl border border-white/20 backdrop-blur-sm`}>
+                      <div className="flex gap-4">
+                        <div className="bg-white/20 p-3 rounded-xl h-fit">
+                          {hoveredRow === 'nominal' || hoveredRow === 'ordinal' ? <Binary size={24} /> : <BarChart3 size={24} />}
+                        </div>
+                        <div className="space-y-3">
+                          <div>
+                            <h5 className="font-bold text-white flex items-center gap-2">
+                              <HelpCircle size={16} /> مثال واقعي
+                            </h5>
+                            <p className="text-sm text-white/90">{MEASUREMENT_DETAILS[hoveredRow].example}</p>
+                          </div>
+                          <div className="pt-2 border-t border-white/10">
+                            <h5 className="font-bold text-white flex items-center gap-2">
+                              <BarChart3 size={16} /> الدلالات الإحصائية
+                            </h5>
+                            <p className="text-sm text-white/90">{MEASUREMENT_DETAILS[hoveredRow].stats}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <tr 
+                onMouseEnter={() => setHoveredRow('nominal')}
+                onMouseLeave={() => setHoveredRow(null)}
+                className={`transition-colors cursor-help ${hoveredRow === 'nominal' ? 'bg-indigo-600/20' : 'hover:bg-slate-800/30'}`}
+              >
                 <td className="py-4 px-6 font-bold text-indigo-100">الاسمي</td>
                 <td className="py-4 px-6 font-sans text-indigo-400 tracking-wide font-medium uppercase text-sm">Nominal</td>
                 <td className="py-4 px-6 text-slate-300 text-sm">التصنيف النوعي وتوزيع الأرقام كرموز فقط بدون قيمة حسابية.</td>
                 <td className="py-4 px-6 text-slate-300 text-sm italic">الجنس، التخصصات الجامعية، أرقام لاعبي الكرة.</td>
               </tr>
-              <tr className="hover:bg-slate-800/30 transition-colors">
+              <tr 
+                onMouseEnter={() => setHoveredRow('ordinal')}
+                onMouseLeave={() => setHoveredRow(null)}
+                className={`transition-colors cursor-help ${hoveredRow === 'ordinal' ? 'bg-indigo-600/20' : 'hover:bg-slate-800/30'}`}
+              >
                 <td className="py-4 px-6 font-bold text-indigo-100">الرتبي</td>
                 <td className="py-4 px-6 font-sans text-indigo-400 tracking-wide font-medium uppercase text-sm">Ordinal</td>
                 <td className="py-4 px-6 text-slate-300 text-sm">ترتيب المفردات تصاعدياً أو تنازلياً دون تحديد المسافات بدقة.</td>
                 <td className="py-4 px-6 text-slate-300 text-sm italic">ترتيب الأوائل، المستويات الاقتصادية، الرتب العسكرية.</td>
               </tr>
-              <tr className="hover:bg-slate-800/30 transition-colors">
+              <tr 
+                onMouseEnter={() => setHoveredRow('interval')}
+                onMouseLeave={() => setHoveredRow(null)}
+                className={`transition-colors cursor-help ${hoveredRow === 'interval' ? 'bg-indigo-600/20' : 'hover:bg-slate-800/30'}`}
+              >
                 <td className="py-4 px-6 font-bold text-indigo-100">الفئوي (المسافات)</td>
                 <td className="py-4 px-6 font-sans text-indigo-400 tracking-wide font-medium uppercase text-sm">Interval</td>
                 <td className="py-4 px-6 text-slate-300 text-sm">مسافات متساوية بين الدرجات، وجود صفر افتراضي (ليس انعداماً).</td>
                 <td className="py-4 px-6 text-slate-300 text-sm italic">درجة الحرارة، اختبارات الذكاء (IQ)، مقياس ليكرت.</td>
               </tr>
-              <tr className="hover:bg-slate-800/30 transition-colors">
+              <tr 
+                onMouseEnter={() => setHoveredRow('ratio')}
+                onMouseLeave={() => setHoveredRow(null)}
+                className={`transition-colors cursor-help ${hoveredRow === 'ratio' ? 'bg-indigo-600/20' : 'hover:bg-slate-800/30'}`}
+              >
                 <td className="py-4 px-6 font-bold text-indigo-100">النسبي</td>
                 <td className="py-4 px-6 font-sans text-indigo-400 tracking-wide font-medium uppercase text-sm">Ratio</td>
                 <td className="py-4 px-6 text-slate-300 text-sm">أرقى المستويات، وجود صفر حقيقي، يسمح بكافة العمليات الحسابية.</td>

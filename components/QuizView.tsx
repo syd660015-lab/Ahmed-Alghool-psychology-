@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { SYLLABUS } from '../constants';
 import { QUIZ_DATA } from '../constants/quizData';
 import { 
   CheckCircle, XCircle, ChevronLeft, ChevronRight, 
   RefreshCw, AlertCircle, BookOpen, Brain, 
-  Lightbulb, ArrowRightCircle, Target
+  Lightbulb, ArrowRightCircle, Target, Trophy, Award, Star
 } from 'lucide-react';
 
 export const QuizView: React.FC = () => {
@@ -13,6 +14,7 @@ export const QuizView: React.FC = () => {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [score, setScore] = useState(0);
+  const [showSummary, setShowSummary] = useState(false);
 
   const currentQuiz = selectedLecture ? QUIZ_DATA.find(q => q.lectureId === selectedLecture) : null;
   const lectureData = selectedLecture ? SYLLABUS.find(l => l.id === selectedLecture) : null;
@@ -36,7 +38,18 @@ export const QuizView: React.FC = () => {
       setCurrentQuestionIndex(prev => prev + 1);
       setSelectedOption(null);
       setIsSubmitted(false);
+    } else {
+      setShowSummary(true);
     }
+  };
+
+  const getSummaryMessage = () => {
+    const total = currentQuiz?.questions.length || 1;
+    const percentage = (score / total) * 100;
+    if (percentage === 100) return { title: "ممتاز!", message: "لقد أتقنت المادة تماماً. أنت خبير في القياس النفسي!", color: "text-green-600" };
+    if (percentage >= 80) return { title: "عمل رائع!", message: "أداؤك متميز جداً. استمر في هذا المستوى العالي من التركيز.", color: "text-indigo-600" };
+    if (percentage >= 60) return { title: "جيد جداً!", message: "لقد تجاوزت الاختبار بنجاح، ولكن هناك مساحة للتحسن في بعض المفاهيم.", color: "text-blue-600" };
+    return { title: "تحتاج إلى مزيد من المراجعة!", message: "لا تقلق، الفشل هو أول خطوة في التعلم. راجع المحاضرة وحاول مرة أخرى.", color: "text-amber-600" };
   };
 
   const resetQuiz = () => {
@@ -45,7 +58,74 @@ export const QuizView: React.FC = () => {
     setSelectedOption(null);
     setIsSubmitted(false);
     setScore(0);
+    setShowSummary(false);
   };
+
+  if (showSummary) {
+    const summary = getSummaryMessage();
+    const total = currentQuiz?.questions.length || 0;
+    const percentage = Math.round((score / total) * 100);
+
+    return (
+      <div className="max-w-2xl mx-auto animate-in fade-in zoom-in duration-500 py-10">
+        <div className="bg-white p-10 rounded-[3rem] shadow-2xl border border-slate-100 text-center relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-5">
+            <Trophy size={200} />
+          </div>
+          
+          <motion.div 
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", damping: 12, stiffness: 200 }}
+            className="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner"
+          >
+            <Trophy size={48} />
+          </motion.div>
+
+          <h2 className={`text-4xl font-black mb-2 academic-font ${summary.color}`}>{summary.title}</h2>
+          <p className="text-slate-500 mb-8 font-medium">{summary.message}</p>
+
+          <div className="grid grid-cols-2 gap-4 mb-10">
+            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">النتيجة النهائية</p>
+              <p className="text-3xl font-black text-slate-800">{score} / {total}</p>
+            </div>
+            <div className="bg-indigo-50 p-6 rounded-3xl border border-indigo-100">
+              <p className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-1">النسبة المئوية</p>
+              <p className="text-3xl font-black text-indigo-600">{percentage}%</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4">
+            <button 
+              onClick={resetQuiz}
+              className="flex-1 bg-indigo-600 text-white py-5 rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-2 active:scale-95"
+            >
+              <RefreshCw size={20} /> العودة للرئيسية
+            </button>
+            <button 
+              onClick={() => {
+                setCurrentQuestionIndex(0);
+                setSelectedOption(null);
+                setIsSubmitted(false);
+                setScore(0);
+                setShowSummary(false);
+              }}
+              className="flex-1 bg-slate-900 text-white py-5 rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-xl flex items-center justify-center gap-2 active:scale-95"
+            >
+              <Award size={20} /> إعادة المحاولة
+            </button>
+          </div>
+        </div>
+        
+        <div className="mt-8 flex justify-center gap-1">
+          {[...Array(5)].map((_, i) => (
+            <Star key={i} size={20} className={i < Math.round(percentage/20) ? "text-yellow-400 fill-yellow-400" : "text-slate-200"} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (!selectedLecture) {
     return (
@@ -78,12 +158,27 @@ export const QuizView: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto animate-in slide-in-from-left duration-300">
       <div className="flex items-center justify-between mb-8">
-        <button 
-          onClick={resetQuiz} 
-          className="text-sm font-bold text-slate-500 flex items-center gap-2 hover:text-indigo-600 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-100 transition-all active:scale-95"
-        >
-          <RefreshCw size={16} /> تغيير المحاضرة
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={resetQuiz} 
+            className="text-sm font-bold text-slate-500 flex items-center gap-2 hover:text-indigo-600 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-100 transition-all active:scale-95"
+          >
+            <ChevronRight size={16} /> تغيير المحاضرة
+          </button>
+          <button 
+            onClick={() => {
+              if(window.confirm('هل أنت متأكد من إعادة بدء هذا الاختبار؟')) {
+                setCurrentQuestionIndex(0);
+                setSelectedOption(null);
+                setIsSubmitted(false);
+                setScore(0);
+              }
+            }} 
+            className="text-sm font-bold text-indigo-600 flex items-center gap-2 hover:bg-indigo-50 bg-white px-4 py-2 rounded-xl shadow-sm border border-indigo-100 transition-all active:scale-95"
+          >
+            <RefreshCw size={16} /> البدء من جديد
+          </button>
+        </div>
         <div className="flex items-center gap-3">
            <div className="hidden sm:block text-left mr-4">
              <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">التقدم الحالي</p>
@@ -198,7 +293,9 @@ export const QuizView: React.FC = () => {
               onClick={handleNext}
               className="w-full bg-indigo-900 text-white py-5 rounded-2xl font-bold hover:bg-indigo-800 transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-3 group active:scale-[0.98]"
             >
-              <span className="text-lg">انتقل إلى السؤال التالي</span>
+              <span className="text-lg">
+                {currentQuestionIndex === (currentQuiz?.questions.length || 0) - 1 ? 'عرض نتائج الاختبار' : 'انتقل إلى السؤال التالي'}
+              </span>
               <ArrowRightCircle size={22} className="transition-transform group-hover:translate-x-[-4px]" />
             </button>
           </div>

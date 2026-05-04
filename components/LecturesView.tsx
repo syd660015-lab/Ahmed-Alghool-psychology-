@@ -6,7 +6,8 @@ import { LectureNotes } from './LectureNotes';
 import { 
   Book, CheckCircle2, Brain, Network, Zap, Users, 
   EyeOff, Puzzle, Heart, Ruler, Palette, Activity,
-  Info, Target, Shield, BookOpen, ClipboardCheck, X, PencilLine
+  Info, Target, Shield, BookOpen, ClipboardCheck, X, PencilLine,
+  Download
 } from 'lucide-react';
 
 const getLectureIcon = (id: number) => {
@@ -31,6 +32,25 @@ export const LecturesView: React.FC = () => {
   const [openNotesId, setOpenNotesId] = useState<number | null>(null);
 
   const activeLecture = SYLLABUS.find(l => l.id === activeQuizId);
+
+  const exportLectureContent = (lecture: any) => {
+    const title = `المحاضرة: ${lecture.title} (رقم ${lecture.id})`;
+    const divider = '='.repeat(40);
+    const goals = lecture.goals.map((g: string) => `- ${g}`).join('\n');
+    const concepts = lecture.keyConcepts.join(', ');
+    
+    const content = `${title}\n${divider}\n\nالوصف:\n${lecture.description}\n\nالسياق:\n${lecture.titleExplanation}\n\nالأهداف:\n${goals}\n\nالمفاهيم الأساسية:\n${concepts}\n\n\nتم التصدير من منصة القياس النفسي الدينامي - العريش`;
+    
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Lecture_${lecture.id}_Content.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -68,6 +88,14 @@ export const LecturesView: React.FC = () => {
                       <h3 className="text-2xl font-bold text-slate-900 academic-font group-hover:text-indigo-900 transition-colors duration-300">{lecture.title}</h3>
                     </div>
                   </div>
+                  <button 
+                    onClick={() => exportLectureContent(lecture)}
+                    className="p-2.5 bg-slate-100 text-slate-500 hover:bg-indigo-600 hover:text-white rounded-xl transition-all shadow-sm flex items-center gap-2 group/export"
+                    title="تحميل محتوى المحاضرة كملف نصي"
+                  >
+                    <Download size={18} className="group-hover/export:scale-110 transition-transform" />
+                    <span className="text-[10px] font-bold hidden sm:block">تصدير</span>
+                  </button>
                 </div>
 
                 <div className="space-y-6 flex-1">

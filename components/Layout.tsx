@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { AppView } from '../types';
-import { BookOpen, MessageSquare, BarChart3, GraduationCap, ClipboardCheck, Languages, Gamepad2 } from 'lucide-react';
+import { BookOpen, MessageSquare, BarChart3, GraduationCap, ClipboardCheck, Languages, Gamepad2, Zap } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,6 +14,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeView, setActiveV
     { id: AppView.CHAT, icon: MessageSquare, label: 'المساعد الذكي' },
     { id: AppView.LECTURES, icon: BookOpen, label: 'المحاضرات' },
     { id: AppView.QUIZ, icon: ClipboardCheck, label: 'بنك الأسئلة' },
+    { id: AppView.ADAPTIVE_TEST, icon: Zap, label: 'الاختبار التكيفي (CAT)' },
     { id: AppView.GLOSSARY, icon: Languages, label: 'القاموس' },
     { id: AppView.GAMES, icon: Gamepad2, label: 'تحدي المعرفة' },
     { id: AppView.MEASUREMENT, icon: BarChart3, label: 'أدوات القياس' },
